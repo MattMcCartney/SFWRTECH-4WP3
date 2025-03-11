@@ -20,7 +20,12 @@
 			</div>
 			<div class="mb-3">
 				<label for="Class" class="form-label">Class</label>
-				<input type="text" class="form-control" id="Class" name="Class" required value="{{character.Class}}">
+				<select class="form-control" id="Class" name="Class" required>
+					<option value="">Select Class</option>
+					{{#classes}}
+					<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+					{{/classes}}
+				</select>
 			</div>
 			<div class="mb-3">
 				<label for="Strength" class="form-label">Strength</label>

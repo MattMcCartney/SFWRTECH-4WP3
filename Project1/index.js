@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const db = require('characters');
+const db = require('./initdb');
 
 // Setup file storage
 const storage = multer.diskStorage({
@@ -28,7 +28,17 @@ router.get('/', (req, res) => {
 
 // Route to display the form for creating a new character
 router.get('/create', (req, res) => {
-    res.render('characterForm', { formAction: "/create", isNew: true });
+    const classes = [
+        'Barbarian', 'Bard', 'Cleric', 'Druid', 
+        'Fighter', 'Monk', 'Paladin', 'Ranger', 
+        'Rogue', 'Sorcerer', 'Warlock', 'Wizard'
+    ].map(cls => ({ name: cls, selected: false })); // Map to objects
+
+    res.render('characterForm', { 
+        formAction: "/create", 
+        isNew: true,
+        classes: classes 
+    });
 });
 
 // Route to handle the creation of a new character
@@ -49,12 +59,24 @@ router.post('/create', upload.single('Token'), (req, res) => {
 // Route to display the form for editing an existing character
 router.get('/edit/:id', (req, res) => {
     const id = req.params.id;
-    db.get("SELECT * FROM characters WHERE rowid = ?", [id], (err, row) => {
+    db.get("SELECT * FROM characters WHERE CharacterId = ?", [id], (err, character) => {
         if (err) {
             res.status(400).send("Character not found.");
             throw err;
         }
-        res.render('characterForm', { character: row, formAction: `/update/${id}`, isNew: false });
+        
+        const classes = [
+            'Barbarian', 'Bard', 'Cleric', 'Druid', 
+            'Fighter', 'Monk', 'Paladin', 'Ranger', 
+            'Rogue', 'Sorcerer', 'Warlock', 'Wizard'
+        ].map(cls => ({ name: cls, selected: cls === character.Class }));
+
+        res.render('characterForm', { 
+            character: character,
+            formAction: `/update/${id}`, 
+            isNew: false,
+            classes: classes 
+        });
     });
 });
 
@@ -83,6 +105,43 @@ router.get('/delete/:id', (req, res) => {
             throw err;
         }
         res.redirect('/');
+    });
+});
+
+// Route to delete all characters
+router.get('/delete-all', (req, res) => {
+    db.run("DELETE FROM characters", function(err) {
+        if (err) {
+            res.status(500).send("Failed to delete all characters.");
+            return;
+        }
+        res.redirect('/'); // Redirect back to the character list or a confirmation page
+    });
+});
+
+// Route to filter character records
+router.get('/filter', (req, res) => {
+    const { class: filterClass, highestStat } = req.query;
+
+    let query = "SELECT * FROM characters WHERE 1=1";
+    const params = [];
+
+    if (filterClass) {
+        query += " AND Class = ?";
+        params.push(filterClass);
+    }
+
+    if (highestStat) {
+        // Check if the chosen stat is greater than or equal to all other stats
+        query += ` AND ${highestStat} >= ALL(SELECT MAX(v) FROM (VALUES (Strength), (Dexterity), (Constitution), (Wisdom), (Intelligence), (Charisma)) AS value(v))`;
+    }
+
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            res.status(400).send("Unable to fetch characters.");
+            return;
+        }
+        res.render('characters', { characters: rows });
     });
 });
 

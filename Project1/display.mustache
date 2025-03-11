@@ -13,9 +13,39 @@
 		<a href="/create" class="btn btn-success mb-3">Create Character</a>
 		<!-- Button to delete all characters -->
 		<button class="btn btn-danger mb-3" onclick="deleteAllCharacters()">Delete All Characters</button>
-		<!-- ToDo: Dropdown to filter records -->
-		
-		
+		<!-- Dropdown to filter records -->
+		<div class="mb-3">
+			<!-- Dropdown to filter by class -->
+			<label for="filterClass" class="form-label">Filter by Class:</label>
+			<select class="form-control" id="filterClass" onchange="applyFilter()">
+				<option value="">All Classes</option>
+				<option value="Barbarian">Barbarian</option>
+				<option value="Bard">Bard</option>
+				<option value="Cleric">Cleric</option>
+				<option value="Druid">Druid</option>
+				<option value="Fighter">Fighter</option>
+				<option value="Monk">Monk</option>
+				<option value="Paladin">Paladin</option>
+				<option value="Ranger">Ranger</option>
+				<option value="Rogue">Rogue</option>
+				<option value="Sorcerer">Sorcerer</option>
+				<option value="Warlock">Warlock</option>
+				<option value="Wizard">Wizard</option>
+			</select>
+
+			<!-- Dropdown to filter by highest stat -->
+			<label for="filterStat" class="form-label">Filter by Highest Stat:</label>
+			<select class="form-control" id="filterStat" onchange="applyFilter()">
+				<option value="">Any Stat</option>
+				<option value="Strength">Strength</option>
+				<option value="Dexterity">Dexterity</option>
+				<option value="Constitution">Constitution</option>
+				<option value="Wisdom">Wisdom</option>
+				<option value="Intelligence">Intelligence</option>
+				<option value="Charisma">Charisma</option>
+			</select>
+		</div>
+				
 		<table class="table">
 			<thead>
 				<tr>
@@ -64,8 +94,13 @@
 			}
 		}
 
-		function openFilterModal() {
-			// Placeholder function for opening a filter dialog or implementing a filter UI
+		function applyFilter() {
+			const classFilter = document.getElementById('filterClass').value;
+			const statFilter = document.getElementById('filterStat').value;
+
+			// Construct URL with query parameters
+			const url = `/filter?class=${classFilter}&highestStat=${statFilter}`;
+			window.location.href = url; // Redirect to the filtered URL
 		}
 	</script>
 	
