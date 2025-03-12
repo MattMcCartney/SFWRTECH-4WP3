@@ -20,7 +20,16 @@ const upload = multer({ storage: storage });
 
 // Route to display all characters
 router.get('/', (req, res) => {
-    db.all("SELECT *, rowid FROM characters", [], (err, rows) => {
+	const sort = req.query.sort;
+    const order = req.query.order === 'desc' ? 'DESC' : 'ASC';  // Default to ascending if not specified
+
+    // Validate sort field
+    const validSortFields = ['Strength', 'Dexterity', 'Constitution', 'Wisdom', 'Intelligence', 'Charisma', 'Level'];
+    const sortField = validSortFields.includes(sort) ? sort : 'CharacterId';  // Default to sorting by ID if invalid
+
+    let query = `SELECT * FROM characters ORDER BY ${sortField} ${order}`;
+	
+    db.all(query, [], (err, rows) => {
         if (err) {
             res.status(400).send("Unable to fetch characters.");
             throw err;
