@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const db = require('./initdb');
+const path = require('path');
+const fs = require('fs');
 
 // Setup file storage
 const storage = multer.diskStorage({
@@ -10,6 +12,7 @@ const storage = multer.diskStorage({
         callback(null, './uploads/');
     },
     filename: function(req, file, callback) {
+        // Use the 'path' module to get the extension of the original uploaded file
         callback(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
     }
 });
@@ -17,12 +20,23 @@ const upload = multer({ storage: storage });
 
 // Route to display all characters
 router.get('/', (req, res) => {
-    db.all("SELECT * FROM characters", [], (err, rows) => {
+    db.all("SELECT *, rowid FROM characters", [], (err, rows) => {
         if (err) {
             res.status(400).send("Unable to fetch characters.");
             throw err;
         }
-        res.render('characters', { characters: rows });
+
+        // Convert BLOB data to Base64 for each character
+        const characters = rows.map(row => {
+            const tokenBase64 = row.Token ? Buffer.from(row.Token).toString('base64') : null;
+            return {
+                ...row,
+                Token: tokenBase64 ? `data:image/png;base64,${tokenBase64}` : null,
+				id: row.CharacterId
+            };
+        });
+
+        res.render('display', { characters: characters });
     });
 });
 
@@ -34,7 +48,7 @@ router.get('/create', (req, res) => {
         'Rogue', 'Sorcerer', 'Warlock', 'Wizard'
     ].map(cls => ({ name: cls, selected: false })); // Map to objects
 
-    res.render('characterForm', { 
+    res.render('form', { 
         formAction: "/create", 
         isNew: true,
         classes: classes 
@@ -43,8 +57,19 @@ router.get('/create', (req, res) => {
 
 // Route to handle the creation of a new character
 router.post('/create', upload.single('Token'), (req, res) => {
-    const { CharacterName, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma } = req.body;
-    const Token = req.file ? fs.readFileSync(req.file.path) : null; // Read file buffer if uploaded
+    if (!req.file) {
+        res.status(400).send("Uploading a token image is required.");
+        return;
+    }
+	
+	const { CharacterName, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma } = req.body;
+    const Token = fs.readFileSync(req.file.path);
+
+	// Validation
+	if (!CharacterName || !Class || [Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma].some(stat => stat < 8 || stat > 20)) {
+        res.status(400).send("Please fill all fields correctly.");
+        return;
+    }
 
     db.run("INSERT INTO characters (CharacterName, Token, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
         [CharacterName, Token, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma], function(err) {
@@ -57,7 +82,7 @@ router.post('/create', upload.single('Token'), (req, res) => {
 });
 
 // Route to display the form for editing an existing character
-router.get('/edit/:id', (req, res) => {
+router.get('/modify/:id', (req, res) => {
     const id = req.params.id;
     db.get("SELECT * FROM characters WHERE CharacterId = ?", [id], (err, character) => {
         if (err) {
@@ -71,7 +96,7 @@ router.get('/edit/:id', (req, res) => {
             'Rogue', 'Sorcerer', 'Warlock', 'Wizard'
         ].map(cls => ({ name: cls, selected: cls === character.Class }));
 
-        res.render('characterForm', { 
+        res.render('form', { 
             character: character,
             formAction: `/update/${id}`, 
             isNew: false,
@@ -86,13 +111,31 @@ router.post('/update/:id', upload.single('Token'), (req, res) => {
     const { CharacterName, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma } = req.body;
     const Token = req.file ? fs.readFileSync(req.file.path) : null; // Read file buffer if uploaded
 
-    db.run("UPDATE characters SET CharacterName = ?, Token = ?, Class = ?, Level = ?, Strength = ?, Dexterity = ?, Constitution = ?, Wisdom = ?, Intelligence = ?, Charisma = ? WHERE rowid = ?",
-        [CharacterName, Token, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma, id], function(err) {
+	// Validation
+	if (!CharacterName || !Class || [Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma].some(stat => stat < 8 || stat > 20)) {
+        res.status(400).send("Please fill all fields correctly.");
+        return;
+    }
+	
+	db.get("SELECT Token FROM characters WHERE CharacterId = ?", [id], (err, result) => {
         if (err) {
-            res.status(400).send("Failed to update character.");
-            throw err;
+            res.status(400).send("Failed to retrieve existing character.");
+            return;
         }
-        res.redirect('/');
+
+        // If no new file is uploaded, use the existing Token
+        if (!Token && result.Token) {
+            Token = result.Token;
+        }
+	
+		db.run("UPDATE characters SET CharacterName = ?, Token = ?, Class = ?, Level = ?, Strength = ?, Dexterity = ?, Constitution = ?, Wisdom = ?, Intelligence = ?, Charisma = ? WHERE rowid = ?",
+			[CharacterName, Token, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma, id], function(err) {
+			if (err) {
+				res.status(400).send("Failed to update character.");
+				throw err;
+			}
+			res.redirect('/');
+		});
     });
 });
 
@@ -122,26 +165,66 @@ router.get('/delete-all', (req, res) => {
 // Route to filter character records
 router.get('/filter', (req, res) => {
     const { class: filterClass, highestStat } = req.query;
+    const stats = ['Strength', 'Dexterity', 'Constitution', 'Wisdom', 'Intelligence', 'Charisma'];
 
     let query = "SELECT * FROM characters WHERE 1=1";
     const params = [];
 
-    if (filterClass) {
+    if (filterClass && filterClass !== "") {
         query += " AND Class = ?";
         params.push(filterClass);
     }
 
-    if (highestStat) {
-        // Check if the chosen stat is greater than or equal to all other stats
-        query += ` AND ${highestStat} >= ALL(SELECT MAX(v) FROM (VALUES (Strength), (Dexterity), (Constitution), (Wisdom), (Intelligence), (Charisma)) AS value(v))`;
-    }
+    if (highestStat && highestStat !== "") {
+        const comparisons = stats.filter(stat => stat !== highestStat) // Filter out the selected stat
+            .map(stat => `${highestStat} >= ${stat}`); // Create comparison strings
+        if (comparisons.length > 0) {
+            query += ` AND ${comparisons.join(' AND ')}`; // Append comparisons to the main query
+        }
+	}
 
     db.all(query, params, (err, rows) => {
         if (err) {
             res.status(400).send("Unable to fetch characters.");
             return;
         }
-        res.render('characters', { characters: rows });
+		
+		// Convert BLOB data to Base64 for each character
+        const characters = rows.map(row => {
+            const tokenBase64 = row.Token ? Buffer.from(row.Token).toString('base64') : null;
+            return {
+                ...row,
+                Token: tokenBase64 ? `data:image/png;base64,${tokenBase64}` : null,
+				id: row.CharacterId
+            };
+        });
+		
+		// Prepare viewData for rendering
+        let viewData = {
+            characters: characters,
+            selectedClass: filterClass || "",
+            selectedStat: highestStat || "",
+            isBarbarian: filterClass === 'Barbarian',
+            isBard: filterClass === 'Bard',
+            isCleric: filterClass === 'Cleric',
+			isDruid: filterClass === 'Druid',
+            isFighter: filterClass === 'Fighter',
+            isMonk: filterClass === 'Monk',
+			isPaladin: filterClass === 'Paladin',
+            isRanger: filterClass === 'Ranger',
+            isRogue: filterClass === 'Rogue',
+			isSorcerer: filterClass === 'Sorcerer',
+			isWarlock: filterClass === 'Warlock',
+            isWizard: filterClass === 'Wizard',
+            isStrength: highestStat === 'Strength',
+			isDexterity: highestStat === 'Dexterity',
+            isConstitution: highestStat === 'Constitution',
+            isWisdom: highestStat === 'Wisdom',
+			isIntelligence: highestStat === 'Intelligence',
+            isCharisma: highestStat === 'Charisma'
+        };
+		
+        res.render('display', viewData);
     });
 });
 

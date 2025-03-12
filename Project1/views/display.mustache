@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character List</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+	<div class="container mt-5">
+		<h1>Character List</h1>
+		<!-- Button to create a new character -->
+		<a href="/create" class="btn btn-success mb-3">Create Character</a>
+		<!-- Button to delete all characters -->
+		<button class="btn btn-danger mb-3" onclick="deleteAllCharacters()">Delete All Characters</button>
+		<!-- Dropdown to filter records -->
+		<div class="mb-3">
+			<!-- Dropdown to filter by class -->
+			<label for="filterClass" class="form-label">Filter by Class:</label>
+			<select class="form-control" id="filterClass" onchange="applyFilter()">
+				<option value="">All Classes</option>
+				<option value="Barbarian" {{#selectedClass}} {{#isBarbarian}}selected{{/isBarbarian}} {{/selectedClass}}>Barbarian</option>
+				<option value="Bard" {{#selectedClass}} {{#isBard}}selected{{/isBard}} {{/selectedClass}}>Bard</option>
+				<option value="Cleric" {{#selectedClass}} {{#isCleric}}selected{{/isCleric}} {{/selectedClass}}>Cleric</option>
+				<option value="Druid" {{#selectedClass}} {{#isDruid}}selected{{/isDruid}} {{/selectedClass}}>Druid</option>
+				<option value="Fighter" {{#selectedClass}} {{#isFighter}}selected{{/isFighter}} {{/selectedClass}}>Fighter</option>
+				<option value="Monk" {{#selectedClass}} {{#isMonk}}selected{{/isMonk}} {{/selectedClass}}>Monk</option>
+				<option value="Paladin" {{#selectedClass}} {{#isPaladin}}selected{{/isPaladin}} {{/selectedClass}}>Paladin</option>
+				<option value="Ranger" {{#selectedClass}} {{#isRanger}}selected{{/isRanger}} {{/selectedClass}}>Ranger</option>
+				<option value="Rogue" {{#selectedClass}} {{#isRogue}}selected{{/isRogue}} {{/selectedClass}}>Rogue</option>
+				<option value="Sorcerer" {{#selectedClass}} {{#isSorcerer}}selected{{/isSorcerer}} {{/selectedClass}}>Sorcerer</option>
+				<option value="Warlock" {{#selectedClass}} {{#isWarlock}}selected{{/isWarlock}} {{/selectedClass}}>Warlock</option>
+				<option value="Wizard" {{#selectedClass}} {{#isWizard}}selected{{/isWizard}} {{/selectedClass}}>Wizard</option>
+			</select>
+
+			<!-- Dropdown to filter by highest stat -->
+			<label for="filterStat" class="form-label">Filter by Highest Stat:</label>
+			<select class="form-control" id="filterStat" onchange="applyFilter()">
+				<option value="">Any Stat</option>
+				<option value="Strength" {{#selectedStat}} {{#isStrength}}selected{{/isStrength}} {{/selectedStat}}>Strength</option>
+				<option value="Dexterity" {{#selectedStat}} {{#isDexterity}}selected{{/isDexterity}} {{/selectedStat}}>Dexterity</option>
+				<option value="Constitution" {{#selectedStat}} {{#isConstitution}}selected{{/isConstitution}} {{/selectedStat}}>Constitution</option>
+				<option value="Wisdom" {{#selectedStat}} {{#isWisdom}}selected{{/isWisdom}} {{/selectedStat}}>Wisdom</option>
+				<option value="Intelligence" {{#selectedStat}} {{#isIntelligence}}selected{{/isIntelligence}} {{/selectedStat}}>Intelligence</option>
+				<option value="Charisma" {{#selectedStat}} {{#isCharisma}}selected{{/isCharisma}} {{/selectedStat}}>Charisma</option>
+			</select>
+		</div>
+				
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">#</th>
+					<th scope="col">Character Name</th>
+					<th scope="col">Token</th>
+					<th scope="col">Class</th>
+					<th scope="col">Strength</th>
+					<th scope="col">Dexterity</th>
+					<th scope="col">Constitution</th>
+					<th scope="col">Wisdom</th>
+					<th scope="col">Intelligence</th>
+					<th scope="col">Charisma</th>
+					<th scope="col">Level</th>
+					<th scope="col"></th>
+				</tr>
+			</thead>
+			<tbody>
+				{{#characters}}
+				<tr>
+					<th scope="row">{{index}}</th>
+					<td>{{CharacterName}}</td>
+					<td>
+						{{#Token}}
+						<img src="{{Token}}" alt="Character Token" style="width: 100px; height: auto;">
+						{{/Token}}
+					</td>
+					<td>{{Class}}</td>
+					<td>{{Strength}}</td>
+					<td>{{Dexterity}}</td>
+					<td>{{Constitution}}</td>
+					<td>{{Wisdom}}</td>
+					<td>{{Intelligence}}</td>
+					<td>{{Charisma}}</td>
+					<td>{{Level}}</td>
+					<td>
+						<a href="/modify/{{id}}" class="btn btn-primary btn-sm">Modify</a>
+						<a href="/delete/{{id}}" class="btn btn-danger btn-sm" onclick="return confirm('Delete character record?')">Delete</a>
+					</td>
+				</tr>
+				{{/characters}}
+			</tbody>
+		</table>
+	</div>
+	
+	<script>
+		function deleteAllCharacters() {
+			if (confirm('Delete all character records? This action cannot be undone.')) {
+				window.location.href = '/delete-all'; // Route to delete all characters
+			}
+		}
+
+		function applyFilter() {
+			const classFilter = document.getElementById('filterClass').value;
+			const statFilter = document.getElementById('filterStat').value;
+
+			// Construct URL with query parameters
+			const url = `/filter?class=${classFilter}&highestStat=${statFilter}`;
+			window.location.href = url; // Redirect to the filtered URL
+		}
+	</script>
+	
+	<!-- Bootstrap JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
