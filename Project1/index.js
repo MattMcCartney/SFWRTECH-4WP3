@@ -118,7 +118,7 @@ router.get('/modify/:id', (req, res) => {
 router.post('/update/:id', upload.single('Token'), (req, res) => {
     const id = req.params.id;
     const { CharacterName, Class, Level, Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma } = req.body;
-    const Token = req.file ? fs.readFileSync(req.file.path) : null; // Read file buffer if uploaded
+    let Token = req.file ? fs.readFileSync(req.file.path) : null; // Read file buffer if uploaded
 
 	// Validation
 	if (!CharacterName || !Class || [Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma].some(stat => stat < 8 || stat > 20)) {
