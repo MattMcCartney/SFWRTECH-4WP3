@@ -1,0 +1,6 @@
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "serve-json": "json-server --watch db.json --port 4000"
+}
