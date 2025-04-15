@@ -1,6 +1,5 @@
 // app/admin/page.js
 // Admin panel
-
 import Link from 'next/link';
 import { deleteCharacter } from '../actions';
 
