@@ -1,42 +1,22 @@
-// app/admin/create/CreateForm.jsx
-// Form used for character creation
+// app/admin/edit/[id]/EditForm.jsx
+// Form used for character modification
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createCharacter } from '../../actions';
-import { ALLOWED_CLASSES } from '../../../lib/constants';
-import { validateCharacterInput } from '../../../lib/validation';
+import { updateCharacter } from '../../../actions';
+import { ALLOWED_CLASSES } from '../../../../lib/constants';
+import { validateCharacterInput } from '../../../../lib/validation';
 
-export default function CreateForm() {
+export default function EditForm({ character }) {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    character_name: '',
-    character_class: '',
-    character_level: ''
+    character_name: character.character_name,
+    character_class: character.character_class,
+    character_level: character.character_level.toString()
   });
-  
-  const [nextId, setNextId] = useState(null);
 
-  useEffect(() => {
-    async function fetchAndGenerateId() {
-      const res = await fetch('http://localhost:4000/characters');
-      const characters = await res.json();
-
-      const usedIds = characters.map(c => c.id).filter(id => id <= 999);
-      const availableIds = Array.from({ length: 999 }, (_, i) => i + 1).filter(
-        id => !usedIds.includes(id)
-      );
-
-      if (availableIds.length === 0) {
-        setError('No available IDs below 1000.');
-      } else {
-        setNextId(availableIds[0]);
-      }
-    }
-
-    fetchAndGenerateId();
-  }, []);
+  const [errors, setErrors] = useState([]);
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -47,40 +27,43 @@ export default function CreateForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-	
-	const errs = validateCharacterInput(formData);
+
+    const errs = validateCharacterInput(formData);
     if (errs.length > 0) {
       setErrors(errs);
       return;
     }
 
-    const payload = {
-      id: nextId,
+    await updateCharacter(character.id, {
+      id: character.id,
       character_name: formData.character_name,
       character_class: formData.character_class,
       character_level: parseInt(formData.character_level)
-    };
+    });
 
-    await createCharacter(payload);
     router.push('/admin');
   };
-  
-  if (nextId === null) {
-    return <p>Loading...</p>;
-  }
 
   return (
     <form onSubmit={handleSubmit}>
+      {errors.length > 0 && (
+        <ul style={{ color: 'red' }}>
+          {errors.map((err, i) => (
+            <li key={i}>{err}</li>
+          ))}
+        </ul>
+      )}
+
       <div>
         <label>Character Name:</label><br />
         <input
-          type="text"
           name="character_name"
           value={formData.character_name}
           onChange={handleChange}
           required
         />
       </div>
+
       <div>
         <label>Class:</label><br />
         <select name="character_class" value={formData.character_class} onChange={handleChange} required>
@@ -90,20 +73,22 @@ export default function CreateForm() {
           ))}
         </select>
       </div>
+
       <div>
         <label>Level:</label><br />
         <input
           type="number"
           name="character_level"
-          value={formData.character_level}
+          value={formData.level}
           onChange={handleChange}
           min={1}
           max={20}
           required
         />
       </div>
+
       <br />
-      <button type="submit">Create</button>
+      <button type="submit">Save Changes</button>
     </form>
   );
 }
