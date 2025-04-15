@@ -10,11 +10,33 @@ import { ALLOWED_CLASSES } from '../../../lib/constants';
 export default function CreateForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    id: '',
     character_name: '',
     character_class: '',
     character_level: ''
   });
+  
+  const [nextId, setNextId] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchAndGenerateId() {
+      const res = await fetch('http://localhost:4000/characters');
+      const characters = await res.json();
+
+      const usedIds = characters.map(c => c.id).filter(id => id <= 999);
+      const availableIds = Array.from({ length: 999 }, (_, i) => i + 1).filter(
+        id => !usedIds.includes(id)
+      );
+
+      if (availableIds.length === 0) {
+        setError('No available IDs below 1000.');
+      } else {
+        setNextId(availableIds[0]);
+      }
+    }
+
+    fetchAndGenerateId();
+  }, []);
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -26,9 +48,8 @@ export default function CreateForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // NOTE: Assuming valid inputs and unique ID as per your instruction
     const payload = {
-      id: parseInt(formData.id),
+      id: nextId,
       character_name: formData.character_name,
       character_class: formData.character_class,
       character_level: parseInt(formData.character_level)
@@ -37,19 +58,17 @@ export default function CreateForm() {
     await createCharacter(payload);
     router.push('/admin');
   };
+  
+  if (error) {
+    return <p style={{ color: 'red' }}>{error}</p>;
+  }
+  
+  if (nextId === null) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <form onSubmit={handleSubmit}>
-      <div>
-        <label>ID:</label><br />
-        <input
-          type="number"
-          name="id"
-          value={formData.id}
-          onChange={handleChange}
-          required
-        />
-      </div>
       <div>
         <label>Character Name:</label><br />
         <input
