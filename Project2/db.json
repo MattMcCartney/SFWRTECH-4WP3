@@ -10,7 +10,13 @@
       "id": 2,
       "character_name": "Van Hoften",
       "character_class": "Paladin",
-      "character_level": 2
+      "character_level": 3
+    },
+    {
+      "id": 3,
+      "character_name": "Shplants",
+      "character_class": "Warlock",
+      "character_level": 5
     }
   ]
 }
