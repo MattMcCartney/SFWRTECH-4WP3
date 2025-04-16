@@ -32,8 +32,8 @@ export default async function AdminPage() {
             <th style={thStyle}>Name</th>
             <th style={thStyle}>Class</th>
             <th style={thStyle}>Level</th>
-            <th style={thStyle}>D</th>
-            <th style={thStyle}>E</th>
+            <th style={thStyle}></th>
+            <th style={thStyle}></th>
           </tr>
         </thead>
         <tbody>

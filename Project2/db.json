@@ -5,6 +5,12 @@
       "character_name": "Grogg",
       "character_class": "Fighter",
       "character_level": 1
+    },
+    {
+      "id": 2,
+      "character_name": "Van Hoften",
+      "character_class": "Paladin",
+      "character_level": 2
     }
   ]
 }

@@ -2,7 +2,7 @@
 // Form used for character creation
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect  } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCharacter } from '../../actions';
 import { ALLOWED_CLASSES } from '../../../lib/constants';
@@ -17,6 +17,7 @@ export default function CreateForm() {
   });
   
   const [nextId, setNextId] = useState(null);
+  const [errors, setErrors] = useState([]);
 
   useEffect(() => {
     async function fetchAndGenerateId() {
@@ -70,40 +71,55 @@ export default function CreateForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Character Name:</label><br />
-        <input
-          type="text"
-          name="character_name"
-          value={formData.character_name}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div>
-        <label>Class:</label><br />
-        <select name="character_class" value={formData.character_class} onChange={handleChange} required>
-          <option value="">-- Select Class --</option>
-          {ALLOWED_CLASSES.map(cls => (
-            <option key={cls} value={cls}>{cls}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label>Level:</label><br />
-        <input
-          type="number"
-          name="character_level"
-          value={formData.character_level}
-          onChange={handleChange}
-          min={1}
-          max={20}
-          required
-        />
-      </div>
-      <br />
-      <button type="submit">Create</button>
-    </form>
+	<>
+	  {errors.length > 0 && (
+		<ul style={{ color: 'red', marginBottom: '1rem' }}>
+		  {errors.map((err, i) => (
+			<li key={i}>{err}</li>
+		  ))}
+		</ul>
+	  )}
+
+	  <form onSubmit={handleSubmit}>
+		<div>
+		  <label>Character Name:</label><br />
+		  <input
+			type="text"
+			name="character_name"
+			value={formData.character_name}
+			onChange={handleChange}
+			required
+		  />
+		</div>
+		<div>
+		  <label>Class:</label><br />
+		  <select
+			name="character_class"
+			value={formData.character_class}
+			onChange={handleChange}
+			required
+		  >
+			<option value="">-- Select Class --</option>
+			{ALLOWED_CLASSES.map(cls => (
+			  <option key={cls} value={cls}>{cls}</option>
+			))}
+		  </select>
+		</div>
+		<div>
+		  <label>Level:</label><br />
+		  <input
+			type="number"
+			name="character_level"
+			value={formData.character_level}
+			onChange={handleChange}
+			min={1}
+			max={20}
+			required
+		  />
+		</div>
+		<br />
+		<button type="submit">Create</button>
+	  </form>
+	</>
   );
 }
